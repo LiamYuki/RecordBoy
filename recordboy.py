@@ -26,6 +26,7 @@ class RecordBoy:
             self.path = path
         elif self._validate_config(config):
             self.config = config
+            self.recording_thread = threading.Event()
             self.events = []
             self.timer = None
             self.path = None
@@ -146,11 +147,12 @@ class RecordBoy:
             # Stop listeners
             return False
 
-    def _video(self):
+    def _video_record(self):
         """Handle video recording events."""
         sct = mss.mss()
 
         # Unpack config
+        screen = self.config["screen"]
         width = self.config["screen"]["width"]
         height = self.config["screen"]["height"]
         video_file_name = self.config["video_file"]
@@ -158,3 +160,25 @@ class RecordBoy:
 
         fourcc = cv2.VideoWriter_fourcc(*"XVID")
         out = cv2.VideoWriter(video_file_name, fourcc, fps, (width, height))
+
+        print("Video recording started. Press ESC to stop.")
+
+        self.recording_thread.set()
+        while self.recording_thread.is_set():
+            img = np.array(sct.grab(screen))
+            frame = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+            out.write(frame)
+            cv2.imshow("Recording", frame)
+
+            # Esc key stops the thread
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+        # Clean up
+        out.release()
+        cv2.destroyAllWindows()
+
+        print("Video recording stopped.")
+
+    def _stop_video_recording(self):
+        """Stop the video recording."""
+        self.recording_thread.clear()

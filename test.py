@@ -71,8 +71,23 @@ def run_test_listeners():
     print("Listeners test passed.")
 
 
+def run_test_video_record():
+    print("Testing video recording...")
+    recordboy = RecordBoy(config=config)
+
+    # Start recording
+    try:
+        recordboy._video_record()
+    except Exception as e:
+        print(f"Video recording test failed: {e}")
+    finally:
+        recordboy._stop_video_recording()
+        print("Video recording test completed.")
+
+
 if __name__ == "__main__":
     print("Running tests...")
     run_test_init()
     run_test_getters_setters()
     run_test_listeners()
+    run_test_video_record()
