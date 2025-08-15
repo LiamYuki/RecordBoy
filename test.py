@@ -1,4 +1,5 @@
 from recordboy import RecordBoy
+from pynput import mouse, keyboard
 
 # Global test config
 config = {
@@ -50,7 +51,28 @@ def run_test_getters_setters():
     print("Set path test passed.")
 
 
+def run_test_listeners():
+    print("Testing listeners...")
+    recordboy = RecordBoy(config=config)
+
+    # Start recording
+    recordboy.record()
+
+    # Simulate mouse and keyboard events
+    # These would normally be triggered by actual user input
+    recordboy._on_move(100, 200)
+    recordboy._on_click(100, 200, mouse.Button.left, True)
+    recordboy._on_scroll(100, 200, 0, -1)
+    recordboy._on_press(keyboard.Key.enter)
+    recordboy._on_release(keyboard.Key.enter)
+
+    # Check recorded events
+    assert len(recordboy.events) > 0
+    print("Listeners test passed.")
+
+
 if __name__ == "__main__":
     print("Running tests...")
     run_test_init()
     run_test_getters_setters()
+    run_test_listeners()

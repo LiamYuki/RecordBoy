@@ -5,6 +5,7 @@ import time
 import threading
 from pynput import mouse, keyboard
 
+
 class RecordBoy:
 
     def __init__(self, config: dict = None, path: str = None):
@@ -86,13 +87,13 @@ class RecordBoy:
 
     # Listeners for mouse and keyboard
     def _on_move(self, x, y):
-      """Handle mouse movement events.
+        """Handle mouse movement events.
 
-      Args:
-          x (int): The x-coordinate of the mouse pointer.
-          y (int): The y-coordinate of the mouse pointer.
-      """
-      self.events.append(("move", time.time() - self.timer, x, y))
+        Args:
+            x (int): The x-coordinate of the mouse pointer.
+            y (int): The y-coordinate of the mouse pointer.
+        """
+        self.events.append(("move", time.time() - self.timer, x, y))
 
     def _on_click(self, x, y, button, pressed):
         """Handle mouse click events.
@@ -103,8 +104,9 @@ class RecordBoy:
             button (Button): The button that was clicked.
             pressed (bool): True if the button was pressed, False if released.
         """
-        self.events.append(("click", time.time() - self.timer, x, y, button.name, pressed))
-
+        self.events.append(
+            ("click", time.time() - self.timer, x, y, button.name, pressed)
+        )
 
     def _on_scroll(self, x, y, dx, dy):
         """Handle mouse scroll events.
