@@ -13,7 +13,7 @@ class RecordBoy:
 
         Args:
             config (dict): The configuration dictionary.
-            path (str): The file path for the recorded video or events.
+            path (str): The file path for the recorded events.
 
         Configuration dictionary should contain:
         - video_file: <string> Name of the video file to record (avi)
@@ -26,10 +26,18 @@ class RecordBoy:
             self.path = path
         elif self._validate_config(config):
             self.config = config
-            self.recording_thread = threading.Event()
             self.events = []
             self.timer = None
             self.path = None
+            # Setup listeners
+            self.mouse_listener = mouse.Listener(
+                on_move=self._on_move,
+                on_click=self._on_click,
+                on_scroll=self._on_scroll,
+            )
+            self.keyboard_listener = keyboard.Listener(
+                on_press=self._on_press, on_release=self._on_release
+            )
         else:
             raise ValueError("Invalid configuration or path.")
 
@@ -146,39 +154,3 @@ class RecordBoy:
         if key == keyboard.Key.esc:
             # Stop listeners
             return False
-
-    def _video_record(self):
-        """Handle video recording events."""
-        sct = mss.mss()
-
-        # Unpack config
-        screen = self.config["screen"]
-        width = self.config["screen"]["width"]
-        height = self.config["screen"]["height"]
-        video_file_name = self.config["video_file"]
-        fps = self.config["fps"]
-
-        fourcc = cv2.VideoWriter_fourcc(*"XVID")
-        out = cv2.VideoWriter(video_file_name, fourcc, fps, (width, height))
-
-        print("Video recording started. Press ESC to stop.")
-
-        self.recording_thread.set()
-        while self.recording_thread.is_set():
-            img = np.array(sct.grab(screen))
-            frame = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
-            out.write(frame)
-            cv2.imshow("Recording", frame)
-
-            # Esc key stops the thread
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
-        # Clean up
-        out.release()
-        cv2.destroyAllWindows()
-
-        print("Video recording stopped.")
-
-    def _stop_video_recording(self):
-        """Stop the video recording."""
-        self.recording_thread.clear()
