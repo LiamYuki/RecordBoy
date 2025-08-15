@@ -21,6 +21,36 @@ def run_test_init():
         print("Init test passed.")
 
 
+def run_test_getters_setters():
+    print("Testing getters and setters...")
+    recordboy = RecordBoy(config=config)
+
+    # Test getting config
+    assert recordboy.get_config() == config
+    print("Get config test passed.")
+
+    # Test getting path
+    assert recordboy.get_path() == None
+    print("Get path test passed.")
+
+    # Test setting config
+    new_config = {
+        "video_file": "new_video.avi",
+        "events_file": "new_events.txt",
+        "fps": 60,
+        "screen": {"top": 0, "left": 0, "width": 1280, "height": 720},
+    }
+    recordboy.set_config(new_config)
+    assert recordboy.get_config() == new_config
+    print("Set config test passed.")
+
+    # Test setting path
+    recordboy.set_path("new_path.avi")
+    assert recordboy.get_path() == "new_path.avi"
+    print("Set path test passed.")
+
+
 if __name__ == "__main__":
     print("Running tests...")
     run_test_init()
+    run_test_getters_setters()

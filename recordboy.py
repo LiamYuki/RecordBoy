@@ -1,5 +1,3 @@
-# TODO: Getters and setters for config and path
-
 class RecordBoy:
     def _validate_config(self, config: dict) -> bool:
         """Validate the configuration dictionary.
@@ -35,5 +33,41 @@ class RecordBoy:
             self.config = config
             self.events = []
             self.timer = None
+            self.path = None
         else:
             raise ValueError("Invalid configuration or path.")
+
+    def get_config(self) -> dict:
+        """Get the current configuration.
+
+        Returns:
+            dict: The current configuration dictionary.
+        """
+        return self.config
+
+    def get_path(self) -> str:
+        """Get the current file path.
+
+        Returns:
+            str: The current file path.
+        """
+        return self.path
+
+    def set_config(self, config: dict) -> None:
+        """Set the configuration.
+
+        Args:
+            config (dict): The configuration dictionary.
+        """
+        if self._validate_config(config):
+            self.config = config
+        else:
+            raise ValueError("Invalid configuration.")
+
+    def set_path(self, path: str) -> None:
+        """Set the file path.
+
+        Args:
+            path (str): The file path for the recorded video or events.
+        """
+        self.path = path
