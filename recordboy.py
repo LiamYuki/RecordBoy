@@ -128,6 +128,7 @@ class RecordBoy:
         try:
             self.events.append(("key_press", time.time() - self.timer, key.char))
         except AttributeError as e:
+            # foriegn key pressed
             self.events.append(("key_press", time.time() - self.timer, str(key)))
 
     def _on_release(self, key) -> bool:
@@ -144,3 +145,16 @@ class RecordBoy:
         if key == keyboard.Key.esc:
             # Stop listeners
             return False
+
+    def _video(self):
+        """Handle video recording events."""
+        sct = mss.mss()
+
+        # Unpack config
+        width = self.config["screen"]["width"]
+        height = self.config["screen"]["height"]
+        video_file_name = self.config["video_file"]
+        fps = self.config["fps"]
+
+        fourcc = cv2.VideoWriter_fourcc(*"XVID")
+        out = cv2.VideoWriter(video_file_name, fourcc, fps, (width, height))
