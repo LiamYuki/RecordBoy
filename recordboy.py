@@ -4,7 +4,7 @@ from pynput import mouse, keyboard
 
 class RecordBoy:
 
-    def __init__(self, path: str):
+    def __init__(self, path: str) -> None:
         """Initialize the RecordBoy instance.
 
         Args:
@@ -30,13 +30,46 @@ class RecordBoy:
         self.path = path
 
     def record(self) -> None:
-        pass
+        """Start recording mouse and keyboard events."""
+        # Start listeners
+        mouse_listener = mouse.Listener(
+            on_move=self.on_move, on_click=self.on_click, on_scroll=self.on_scroll
+        )
+        keyboard_listener = keyboard.Listener(
+            on_press=self.on_press, on_release=self.on_release
+        )
+
+        keyboard_listener.start()
+        mouse_listener.start()
+
+        # Esc key pressed
+        keyboard_listener.join()
+        mouse_listener.stop()
+
+        # Store events in file
+        try:
+            self.store()
+            print(f"Events stored in {self.path}")
+        except Exception as e:
+            print(f"Error storing events: {e}")
 
     def playback(self) -> None:
         pass
 
-    # Listeners for mouse and keyboard events
-    def on_move(self, x, y):
+    def store(self) -> None:
+        """Store recorded events in a JSON file.
+
+        Exceptions:
+            Exception: If there is an error writing to the file.
+        """
+        try:
+            with open(self.path, "w") as f:
+                json.dump(self.events, f)
+        except Exception as e:
+            raise e
+
+    # Mouse and keyboard events
+    def on_move(self, x, y) -> None:
         """Mouse movement event.
 
         Args:
@@ -45,7 +78,7 @@ class RecordBoy:
         """
         self.events.append(("move", x, y))
 
-    def on_click(self, x, y, button, pressed):
+    def on_click(self, x, y, button, pressed) -> None:
         """Mouse click event.
 
         Args:
@@ -56,7 +89,11 @@ class RecordBoy:
         """
         self.events.append(("click", x, y, button.name, pressed))
 
-    def on_scroll(self, x, y, dx, dy):
+        # Stop listener
+        if not pressed:
+            return False
+
+    def on_scroll(self, x, y, dx, dy) -> None:
         """Mouse scroll event.
 
         Args:
@@ -67,18 +104,21 @@ class RecordBoy:
         """
         self.events.append(("scroll", x, y, dx, dy))
 
-    def on_press(self, key):
+    def on_press(self, key) -> None:
         """Key press event.
 
         Args:
             key (keyboard.key): Key pressed.
+
+        Exceptions:
+          AttributeError: If the key does not have a char attribute.
         """
         try:
             self.events.append(("key_press", key.char))
         except AttributeError:
             self.events.append(("key_press", str(key)))
 
-    def on_release(self, key):
+    def on_release(self, key) -> bool:
         """Key release event.
 
         Args:
@@ -86,6 +126,6 @@ class RecordBoy:
         """
         self.events.append(("key_release", str(key)))
 
-        # Esc stops listeners
+        # ESC key stops listeners
         if key == keyboard.Key.esc:
             return False

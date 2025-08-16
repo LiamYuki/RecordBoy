@@ -1,3 +1,5 @@
+import os
+import json
 from recordboy import RecordBoy
 from pynput import mouse, keyboard
 
@@ -37,8 +39,23 @@ def test_events():
     print("Event tests passed")
 
 
+def test_record_store():
+    print("Testing record...")
+
+    recordboy = RecordBoy(path="test_events.json")
+    recordboy.record()
+    assert len(recordboy.events) > 0
+
+    print("Record test passed.")
+
+    assert os.path.exists("test_events.json")
+
+    print("Store test passed.")
+
+
 if __name__ == "__main__":
     print("Running tests...")
     test_init()
     test_getter_setter()
     test_events()
+    test_record_store()
