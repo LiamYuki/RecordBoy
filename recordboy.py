@@ -1,4 +1,7 @@
 import json
+import os
+import time
+import pyautogui
 from pynput import mouse, keyboard
 
 
@@ -12,6 +15,8 @@ class RecordBoy:
         """
         self.path = path
         self.events = []
+        self.recording = False
+        self.playing = False
 
     def get_path(self) -> str:
         """Get the current file path.
@@ -31,30 +36,69 @@ class RecordBoy:
 
     def record(self) -> None:
         """Start recording mouse and keyboard events."""
-        # Start listeners
-        mouse_listener = mouse.Listener(
-            on_move=self.on_move, on_click=self.on_click, on_scroll=self.on_scroll
-        )
-        keyboard_listener = keyboard.Listener(
-            on_press=self.on_press, on_release=self.on_release
-        )
+        # Wait for start command
+        self.start_recording()
 
-        keyboard_listener.start()
-        mouse_listener.start()
+        if self.recording:
+            # Start listeners
+            mouse_listener = mouse.Listener(
+                on_move=self.on_move, on_click=self.on_click, on_scroll=self.on_scroll
+            )
+            keyboard_listener = keyboard.Listener(
+                on_press=self.on_press, on_release=self.on_release
+            )
 
-        # Esc key pressed
-        keyboard_listener.join()
-        mouse_listener.stop()
+            keyboard_listener.start()
+            mouse_listener.start()
 
-        # Store events in file
-        try:
-            self.store()
-            print(f"Events stored in {self.path}")
-        except Exception as e:
-            print(f"Error storing events: {e}")
+            # Esc key pressed
+            keyboard_listener.join()
+            mouse_listener.stop()
+
+            # Store events in file
+            try:
+                self.store()
+                print(f"Events stored in {self.path}")
+            except Exception as e:
+                print(f"Error storing events: {e}")
 
     def playback(self) -> None:
-        pass
+        """Play back recorded mouse and keyboard events.
+
+        Raises:
+            FileNotFoundError: If the events file does not exist.
+        """
+
+        # Load recorded events
+        if os.path.exists(self.path):
+            with open(self.path, "r") as f:
+                self.events = json.load(f)
+        else:
+            raise FileNotFoundError(f"No such file: {self.path}")
+        # Give time to switch windows
+        time.sleep(3)
+
+        # Wait for start playback command
+        self.start_playing()
+
+        if self.playing:
+            # Start playback
+            for event in self.events:
+                event_type = event[0]
+                if event_type == "move":
+                    x, y = event[1], event[2]
+                    pyautogui.moveTo(x, y)
+                elif event_type == "click":
+                    x, y, button, pressed = event[1], event[2], event[3], event[4]
+
+                    if pressed:
+                        pyautogui.click(x, y, button=button)
+                elif event_type == "scroll":
+                    dy = event[4]
+                    pyautogui.scroll(dy)
+                elif event_type == "key_press":
+                    key = event[1]
+                    pyautogui.press(key)
 
     def store(self) -> None:
         """Store recorded events in a JSON file.
@@ -67,6 +111,28 @@ class RecordBoy:
                 json.dump(self.events, f)
         except Exception as e:
             raise e
+
+    def start_recording(self) -> None:
+        """Start recording mouse and keyboard events."""
+        keyboard_listener = keyboard.Listener(
+            on_press=self.on_press, on_release=self.on_release
+        )
+        keyboard_listener.start()
+
+        # Start key was pressed
+        keyboard_listener.join()
+        self.recording = True
+
+    def start_playing(self) -> None:
+        """Start playing back recorded mouse and keyboard events."""
+        keyboard_listener = keyboard.Listener(
+            on_press=self.on_press, on_release=self.on_release
+        )
+        keyboard_listener.start()
+
+        # Start key was pressed
+        keyboard_listener.join()
+        self.playing = True
 
     # Mouse and keyboard events
     def on_move(self, x, y) -> None:
@@ -113,10 +179,11 @@ class RecordBoy:
         Exceptions:
           AttributeError: If the key does not have a char attribute.
         """
-        try:
-            self.events.append(("key_press", key.char))
-        except AttributeError:
-            self.events.append(("key_press", str(key)))
+        if self.recording:
+            try:
+                self.events.append(("key_press", key.char))
+            except AttributeError:
+                self.events.append(("key_press", str(key)))
 
     def on_release(self, key) -> bool:
         """Key release event.
@@ -124,8 +191,14 @@ class RecordBoy:
         Args:
             key (keyboard.key): Key released.
         """
-        self.events.append(("key_release", str(key)))
+        if self.recording:
+            self.events.append(("key_release", str(key)))
 
-        # ESC key stops listeners
-        if key == keyboard.Key.esc:
+        # ESC key starts/stops listeners
+        if key == keyboard.Key.esc and not self.recording:
+            print("Starting to record mouse and keyboard events...")
+            return False
+
+        if key == keyboard.Key.esc and self.recording:
+            print("Stopping recording...")
             return False

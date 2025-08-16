@@ -27,6 +27,7 @@ def test_events():
     print("Testing mouse and keyboard events...")
 
     recordboy = RecordBoy(path="test_events.json")
+    recordboy.recording = True
     key = keyboard.Key.space
 
     recordboy.on_move(100, 200)
@@ -53,9 +54,20 @@ def test_record_store():
     print("Store test passed.")
 
 
+def test_playback():
+    print("Testing playback...")
+
+    recordboy = RecordBoy(path="test_events.json")
+    recordboy.playback()
+    assert len(recordboy.events) > 0
+
+    print("Playback test passed.")
+
+
 if __name__ == "__main__":
     print("Running tests...")
     test_init()
     test_getter_setter()
     test_events()
     test_record_store()
+    test_playback()
