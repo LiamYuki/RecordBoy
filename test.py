@@ -1,5 +1,5 @@
 import os
-import json
+import pytest
 from recordboy import RecordBoy
 from pynput import mouse, keyboard
 
@@ -62,12 +62,3 @@ def test_playback():
     assert len(recordboy.events) > 0
 
     print("Playback test passed.")
-
-
-if __name__ == "__main__":
-    print("Running tests...")
-    test_init()
-    test_getter_setter()
-    test_events()
-    test_record_store()
-    test_playback()

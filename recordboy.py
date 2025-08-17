@@ -50,27 +50,39 @@ class RecordBoy:
         self.path = path
 
     def record(self) -> None:
-        """Start recording mouse and keyboard events."""
-        # Wait for start command
-        self.start_recording()
+        """Start recording mouse and keyboard events.
+
+            Exceptions:
+                Exception: If there is an error starting or during the recording or storing the events at path.
+        """
+        try:
+            # Wait for start command
+            self.start_recording()
+        except Exception as e:
+            self.logger.error(f"Error starting recording: {e}")
+            raise e
 
         if self.recording:
-            self.logger.info("Recording started")
-            # Start listeners
-            mouse_listener = mouse.Listener(
-                on_move=self.on_move, on_click=self.on_click, on_scroll=self.on_scroll
-            )
-            keyboard_listener = keyboard.Listener(
-                on_press=self.on_press, on_release=self.on_release
-            )
+            try:
+              self.logger.info("Recording started")
+              # Start listeners
+              mouse_listener = mouse.Listener(
+                  on_move=self.on_move, on_click=self.on_click, on_scroll=self.on_scroll
+              )
+              keyboard_listener = keyboard.Listener(
+                  on_press=self.on_press, on_release=self.on_release
+              )
 
-            keyboard_listener.start()
-            mouse_listener.start()
+              keyboard_listener.start()
+              mouse_listener.start()
 
-            # Esc key pressed
-            keyboard_listener.join()
-            mouse_listener.stop()
-            self.logger.info("Recording stopped")
+              # Esc key pressed
+              keyboard_listener.join()
+              mouse_listener.stop()
+              self.logger.info("Recording stopped")
+            except Exception as e:
+                self.logger.error(f"Error during recording: {e}")
+                raise e
 
             # Store events in file
             try:
@@ -99,30 +111,38 @@ class RecordBoy:
         # Give time to switch windows
         time.sleep(3)
 
-        # Wait for start playback command
-        self.start_playing()
+        try:
+            # Wait for start playback command
+            self.start_playing()
+        except Exception as e:
+            self.logger.error(f"Error starting playback: {e}")
+            raise e
 
         self.logger.info(f"Starting playback from {self.path}")
         if self.playing:
             self.logger.info("Playback started")
 
-            # Start playback
-            for event in self.events:
-                event_type = event[0]
-                if event_type == "move":
-                    x, y = event[1], event[2]
-                    pyautogui.moveTo(x, y)
-                elif event_type == "click":
-                    x, y, button, pressed = event[1], event[2], event[3], event[4]
+            try:
+              # Start playback
+              for event in self.events:
+                  event_type = event[0]
+                  if event_type == "move":
+                      x, y = event[1], event[2]
+                      pyautogui.moveTo(x, y)
+                  elif event_type == "click":
+                      x, y, button, pressed = event[1], event[2], event[3], event[4]
 
-                    if pressed:
-                        pyautogui.click(x, y, button=button)
-                elif event_type == "scroll":
-                    dy = event[4]
-                    pyautogui.scroll(dy)
-                elif event_type == "key_press":
-                    key = event[1]
-                    pyautogui.press(key)
+                      if pressed:
+                          pyautogui.click(x, y, button=button)
+                  elif event_type == "scroll":
+                      dy = event[4]
+                      pyautogui.scroll(dy)
+                  elif event_type == "key_press":
+                      key = event[1]
+                      pyautogui.press(key)
+            except Exception as e:
+                self.logger.error(f"Error during playback: {e}")
+                raise e
 
             self.logger.info("Playback finished")
 
@@ -143,28 +163,38 @@ class RecordBoy:
 
     def start_recording(self) -> None:
         """Start recording mouse and keyboard events."""
-        keyboard_listener = keyboard.Listener(
-            on_press=self.on_press, on_release=self.on_release
-        )
-        keyboard_listener.start()
-        self.logger.debug("Waiting for start key...")
+        try:
+          keyboard_listener = keyboard.Listener(
+              on_press=self.on_press, on_release=self.on_release
+          )
+          keyboard_listener.start()
+          self.logger.info("Waiting for start key...")
 
-        # Start key was pressed
-        keyboard_listener.join()
-        self.logger.debug("Start key pressed, recording...")
+          # Start key was pressed
+          keyboard_listener.join()
+        except Exception as e:
+            self.logger.error(f"Error starting recording: {e}")
+            raise e
+
+        self.logger.info("Start key pressed, recording...")
         self.recording = True
 
     def start_playing(self) -> None:
         """Start playing back recorded mouse and keyboard events."""
-        keyboard_listener = keyboard.Listener(
-            on_press=self.on_press, on_release=self.on_release
-        )
-        keyboard_listener.start()
-        self.logger.debug("Waiting for start key...")
+        try:
+          keyboard_listener = keyboard.Listener(
+              on_press=self.on_press, on_release=self.on_release
+          )
+          keyboard_listener.start()
+          self.logger.info("Waiting for start key...")
 
-        # Start key was pressed
-        keyboard_listener.join()
-        self.logger.debug("Start key pressed, recording...")
+          # Start key was pressed
+          keyboard_listener.join()
+        except Exception as e:
+            self.logger.error(f"Error starting playback: {e}")
+            raise e
+
+        self.logger.info("Start key pressed, recording...")
         self.playing = True
 
     # Mouse and keyboard events
