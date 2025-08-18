@@ -16,6 +16,7 @@ class RecordBoy:
             handlers=[logging.FileHandler("recordboy.log"), logging.StreamHandler()],
         )
         self.logger = logging.getLogger(__name__)
+        self.logger.debug("Logging is set up")
 
     def __init__(self, path: str) -> None:
         """Initialize the RecordBoy instance.
@@ -50,47 +51,54 @@ class RecordBoy:
         self.path = path
 
     def record(self) -> None:
-        """Start recording mouse and keyboard events.
-
-            Exceptions:
-                Exception: If there is an error starting or during the recording or storing the events at path.
-        """
+        """Start recording mouse and keyboard events."""
         try:
             # Wait for start command
             self.start_recording()
         except Exception as e:
-            self.logger.error(f"Error starting recording: {e}")
-            raise e
+            self.logger.exception(
+                f"Unknown exception occured while starting recording: {e}"
+            )
 
         if self.recording:
             try:
-              self.logger.info("Recording started")
-              # Start listeners
-              mouse_listener = mouse.Listener(
-                  on_move=self.on_move, on_click=self.on_click, on_scroll=self.on_scroll
-              )
-              keyboard_listener = keyboard.Listener(
-                  on_press=self.on_press, on_release=self.on_release
-              )
+                self.logger.info("Recording started")
+                # Start listeners
+                mouse_listener = mouse.Listener(
+                    on_move=self.on_move,
+                    on_click=self.on_click,
+                    on_scroll=self.on_scroll,
+                )
+                keyboard_listener = keyboard.Listener(
+                    on_press=self.on_press, on_release=self.on_release
+                )
 
-              keyboard_listener.start()
-              mouse_listener.start()
+                keyboard_listener.start()
+                mouse_listener.start()
 
-              # Esc key pressed
-              keyboard_listener.join()
-              mouse_listener.stop()
-              self.logger.info("Recording stopped")
+                # Esc key pressed
+                keyboard_listener.join()
+                mouse_listener.stop()
             except Exception as e:
-                self.logger.error(f"Error during recording: {e}")
-                raise e
+                self.logger.exception(f"Unknown exception during recording: {e}")
+            finally:
+                self.logger.info("Recording stopped")
 
             # Store events in file
             try:
                 self.store()
-                self.logger.info(f"Events stored in {self.path}")
+            except FileExistsError as e:
+                self.logger.exception(f"File already exists: {e}")
+            except FileNotFoundError as e:
+                self.logger.exception(f"File not found: {e}")
+            except IOError as e:
+                self.logger.exception(f"IOError occurred while storing events: {e}")
             except Exception as e:
-                self.logger.error(f"Error storing events: {e}")
-                raise e
+                self.logger.exception(
+                    f"Unknown exception occurred while storing events: {e}"
+                )
+            finally:
+                self.logger.debug(f"Finished storing events in {self.path}")
 
     def playback(self) -> None:
         """Play back recorded mouse and keyboard events.
@@ -98,7 +106,7 @@ class RecordBoy:
         Raises:
             FileNotFoundError: If the events file does not exist.
         """
-
+        # TODO: Refactor (move to separate method)
         # Load recorded events
         if os.path.exists(self.path):
             with open(self.path, "r") as f:
@@ -115,87 +123,100 @@ class RecordBoy:
             # Wait for start playback command
             self.start_playing()
         except Exception as e:
-            self.logger.error(f"Error starting playback: {e}")
-            raise e
+            self.logger.exception(
+                f"Unknown exception occured while starting playback: {e}"
+            )
+        else:
+            self.logger.info(f"Starting playback from {self.path}")
 
-        self.logger.info(f"Starting playback from {self.path}")
         if self.playing:
             self.logger.info("Playback started")
 
             try:
-              # Start playback
-              for event in self.events:
-                  event_type = event[0]
-                  if event_type == "move":
-                      x, y = event[1], event[2]
-                      pyautogui.moveTo(x, y)
-                  elif event_type == "click":
-                      x, y, button, pressed = event[1], event[2], event[3], event[4]
+                # Start playback
+                for event in self.events:
+                    event_type = event[0]
+                    if event_type == "move":
+                        x, y = event[1], event[2]
+                        pyautogui.moveTo(x, y)
+                    elif event_type == "click":
+                        x, y, button, pressed = event[1], event[2], event[3], event[4]
 
-                      if pressed:
-                          pyautogui.click(x, y, button=button)
-                  elif event_type == "scroll":
-                      dy = event[4]
-                      pyautogui.scroll(dy)
-                  elif event_type == "key_press":
-                      key = event[1]
-                      pyautogui.press(key)
+                        if pressed:
+                            pyautogui.click(x, y, button=button)
+                    elif event_type == "scroll":
+                        dy = event[4]
+                        pyautogui.scroll(dy)
+                    elif event_type == "key_press":
+                        key = event[1]
+                        pyautogui.press(key)
             except Exception as e:
-                self.logger.error(f"Error during playback: {e}")
-                raise e
-
-            self.logger.info("Playback finished")
+                self.logger.exception(f"Unknown exception occured during playback: {e}")
+            finally:
+                self.logger.info("Playback finished")
 
     def store(self) -> None:
         """Store recorded events in a JSON file.
 
-        Exceptions:
-            Exception: If there is an error writing to the file.
+        Raises:
+          FileExistsError: If the file already exists.
+          FileNotFoundError: If the file does not exist.
+          IOError: If there is an I/O error.
+          Exception: If there is an unknown error.
         """
         try:
             with open(self.path, "w") as f:
                 json.dump(self.events, f)
             self.logger.info(f"Events stored in {self.path}")
             self.logger.debug(f"Stored events: {self.events}")
+        except (FileExistsError, FileNotFoundError) as e:
+            self.logger.error("File exception occured while storing the events")
+            raise e
+        except IOError as e:
+            self.logger.error("IOError occured while storing events")
+            raise e
         except Exception as e:
-            self.logger.error(f"Error storing events: {e}")
+            self.logger.error("Unknown exception occurred while storing events")
             raise e
 
     def start_recording(self) -> None:
-        """Start recording mouse and keyboard events."""
+        """Start recording mouse and keyboard events.
+
+        Raises:
+            Exception: If there is an error starting the listener.
+        """
         try:
-          keyboard_listener = keyboard.Listener(
-              on_press=self.on_press, on_release=self.on_release
-          )
-          keyboard_listener.start()
-          self.logger.info("Waiting for start key...")
+            keyboard_listener = keyboard.Listener(
+                on_press=self.on_press, on_release=self.on_release
+            )
+            keyboard_listener.start()
+            self.logger.info("Waiting for start key...")
 
-          # Start key was pressed
-          keyboard_listener.join()
+            # Start key was pressed
+            keyboard_listener.join()
         except Exception as e:
-            self.logger.error(f"Error starting recording: {e}")
+            self.logger.error("Unknown exception occurred while starting listener")
             raise e
-
-        self.logger.info("Start key pressed, recording...")
-        self.recording = True
+        finally:
+            self.logger.info("Start key pressed, recording...")
+            self.recording = True
 
     def start_playing(self) -> None:
         """Start playing back recorded mouse and keyboard events."""
         try:
-          keyboard_listener = keyboard.Listener(
-              on_press=self.on_press, on_release=self.on_release
-          )
-          keyboard_listener.start()
-          self.logger.info("Waiting for start key...")
-
-          # Start key was pressed
-          keyboard_listener.join()
+            keyboard_listener = keyboard.Listener(
+                on_press=self.on_press, on_release=self.on_release
+            )
+            keyboard_listener.start()
+            self.logger.info("Waiting for start key...")
+            # Start key was pressed
+            keyboard_listener.join()
         except Exception as e:
-            self.logger.error(f"Error starting playback: {e}")
+            self.logger.error("Unknown exception occured while starting listener")
             raise e
-
-        self.logger.info("Start key pressed, recording...")
-        self.playing = True
+        finally:
+            self.logger.info("Start key pressed, recording...")
+            self.playing = True
 
     # Mouse and keyboard events
     def on_move(self, x, y) -> None:
